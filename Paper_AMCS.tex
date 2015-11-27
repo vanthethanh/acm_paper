@@ -1,0 +1,931 @@
+\documentclass{amcs}
+
+\usepackage{graphicx}
+\usepackage{epstopdf}
+
+\title{Content-Based Image Retrieval using Signature Graph and Self-Organizing Map}
+ 
+\author[ad1][ad2]{Thanh The Van}
+\author[ad3][]{Thanh Manh Le}
+%\author[ad1][ad2]{Third AUTHOR}
+%\author[ad2][]{Fourth AUTHOR}
+%\author[ad1][ad2]{Fifth AUTHOR}
+%\author[ad2][]{Sixth AUTHOR}
+
+\correspondingauthor{Thanh The Van}
+
+\address[ad1]{Faculty of Information Technology\\ Hue University of Sciences - Hue University, Address 77 Nguyen Hue street, Hue city, VietNam\\e-mail: \url{vanthethanh@gmail.com}}
+\address[ad2]{Center for Information Technology\\ HCMC University of Food Industry, Address 140 Le Trong Tan street, Tan Phu district, HoChiMinh city, VietNam}
+\address[ad3]{Hue University, Address 03 Le Loi street, Hue city, VietNam\\e-mail: \url{lmthanh@hueuni.edu.vn}}
+
+%\authors{First name LAST NAME \!$^{a}$, Second AUTHOR \!$^{a, b,}$\thanks{Corresponding author}\,\,,\\ Third AUTHOR \!$^{b}$}
+%\addresses{$^{a}$\! Institute of xxx xxx xxx xxx\\ University of xxx xxx, Address xxx xxx xx xxx xxx\\ e-mail: \url{xxx xx xxx}\\\medskip $^{b}$\! Second affiliation}
+
+\Runauthors{Thanh The Van \it{et al.}}
+%\Runauthors{J. DOE}
+%\Runauthors{J. DOE and M. JOHN}
+
+%Please do not remove these
+%\Year{}
+%\Vol{}
+%\No{}
+%\Startpage{}
+%\Endpage{}
+%\DOI{}
+%\Received{10 May 2006}
+%\Revised{24 October 2005}
+%\Rerevised{15 December 2006}
+
+%\bibliographystyle{dcu}
+
+\begin{document}
+\begin{abstract}
+In order to retrieve effectively on the large database of images, the paper approaches a method of creating an image retrieval system CBIR (\textit{Content-Based Image Retrieval}) based on binary index to describe features of interest object of image.
+This index is called binary signature which builds input data for similar images matching problem. 
+To extract interest object, we propose the image segmentation method on the base of low-level visual features including color and texture of image. 
+These features are extracted at each block of image by DWF transform (\textit{Discrete Wavelet Frame}) and $CIE{L^*}{a^*}{b^*}$ color space.
+On the basis of segmented image, we create binary signature to describe location, color and shape of interest objects. In order to match similar images, we give a similarity measure between the images based on binary signatures.
+From that, we present the CBIR model which combines signature graph and Sig-SOM (\textit{Signature Self-Organizing Map}) to cluster and store the similar images.
+To illustrate the proposed method, we build application and assess experimental results on image databases including COREL, Wang and image object MSRDI (\textit{Microsoft Research Digital Image}).
+
+\end{abstract}
+%
+\begin{keywords}
+Binary Signature, Similarity Measure, Signature Graph, Image Retrieval.
+\end{keywords}
+\maketitle
+
+\section{Introduction}
+\label{Introduction}
+Multimedia data, specially image, is integrated more and more in various information system such as World Wide Web, digital libraries, geographic information systems, satellite observation systems or even police crime recording and investigation systems. The exploration of the number of camera devices and mobile devices with camera  leads a huge amount of images created and shared everyday. This large collection of images does not raise only  the interests in developing multimedia applications but also the challenges for the image retrieval systems to store, maintain and process them. Images have to be indexed, automatically classified, and  stored in a compressed way for efficiently browsing, searching and retrieving~\cite{}. 
+
+Image retrieval systems are classified into two main categories based on their indexing techniques~\cite{}. Text-Based Image Retrieval (TBIR), which is introduced in 70s, indexes images by their described annotations. These annotation of the images are created and labeled manually by humans. The lack of mechanism for automatically annotating leads the limitation of the scalability of these systems. In another hand, Content-Based Image Retrieval (CBIR), which is firstly announced in 1980, provides a method of indexing images by their content. Based on the images' contents which are automatically extracted, the similar images related to a topic can be queried. A CBIR system usually contains two modules: [Extracting visual interest to create index for the image] and [Implementing the similar image retrieval based on index \cite{}.] Despite the advantages of applying automatic mechanism in classifying and indexing images, CBIRs suffer the difficulty [of extracting automatically visual feature, creating multi-dimension indexes or giving the similar image retrieval method].
+
+This paper proposes an alternative method of creating index for images in Content-Based Image Retrieval systems. The visual interests extracted from images are mapped into binary signatures. Each binary signature is an encoded binary arrays which describes the features of an image. Hence, the images that have similar features will be mapped into similar binary arrays. In order to support querying set of similar images, the signatures are sorted based on their similarity. By this way, with a signature as key for searching, a set of similar signatures is efficiently found and set of similar images is efficiently retrieved. 
+
+By our method []
+A specific example for each image has size $N \times N = 500 \times 500$, i.e. this image has 250,000 pixels. If we use the RGB color space then each pixel need three color values Red, Green, Bule; so we need 750,000 storage values. But if we describe image by binary signature which quantized on MPEG7 standard including 25 colors, with each dominant color is described by a bit string with length $m=10$ for describing a color rate on image, we need to store a binary string with length of 250 bit (equivalent 0.033\% in comparison with store by color vector).
+
+%When using binary signature will reduce the storage space and simplify data with complicated calculation models. From there, it reduces significantly the number of operations when performing the problem of similar images retrieval.
+
+On the base of the advantages when applying binary signature for the problem of similar image retrieval, we approach the method of image segmentation for creating binary signature based on $CIE{L^*}{a^*}{b^*}$ color space and DWF (\textit{Discrete Wavelet Frames}) in order to extract texture of image. This binary image has information of location, color and shape of interest object for be an input data of the problem of similar image retrieval. From there, we propose the similarity measure and performs clustering binary signature based on signature graph and Sig-SOM model. 
+
+
+
+%In the last decades, multimedia data (text, image, sound, video) is applied widely in many systems such as WWW information system, digital library system, video search system, geographical information system, astronomic researches, satellite observation, criminal investigation system, bio-medical application, education, entertainment, etc. \cite{Muneesa:14}, \cite{Marques:02}. Moreover, multimedia data have become familiar with daily life and are used in many different digital devices. The digitization of multimedia data created colossal database, which leads to the problem of searching object has more challenges such as automatic classification, querying by the content of object, creating index and query quickly relevant objects, reducing storage in the process of query, etc.
+
+%There are many multimedia systems relating to image retrieval are developed and applied on different fields such as in digital library includes CIRES, C-BIRD, PhotoFile, iMATCH, etc \cite{Liu:07}; in medicine includes IRMA, CBMIR with CT images, etc \cite{Huang:2010}; in GIS \cite{Shea:2012}, etc.
+
+%The image retrieval system is divided into two main classification \cite{Acharya:05}, \cite{Muneesa:14}, \cite{Marques:02} including: (1) Image retrieval based on key words as TBIR (\textit{Text-Based Image Retrieval}) is introduced in 70s. In the TBIR system, image's index is defined by user, therefore it is time-consuming to describe image's content and there are particular limitations because of people's subjectivity; (2) Image retrieval based on content as CBIR (\textit{Content-Based Image Retrieval}) is presented in about 1980; In this system, a set of relevant images from image database is implemented on the base of automatic extraction about content of image, i.e. finding similar images with query image. So, the CBIR system overcomes the restriction of TBIR system. However, the CBIR system has many difficult matters such as extracting automatically visual feature, creating multi-dimension indexes and giving the similar image retrieval method.
+
+%CBIR architectural includes two parts: (1) Extracting visual interest to create index for the image; (2) Implementing the similar image retrieval based on index \cite{Acharya:05}, \cite{Muneesa:14}.
+
+%The content of the paper approaches the method of content-based image retrieval and uses binary signature to create index for image object. The signature is a form of index which describes features of image \cite{Acharya:05}, \cite{Muneesa:14}. With each signature of query image, we find a set of relevant signatures (or non-relevant) in image databases. Based on the set of this signature, we retrieve information to find out a set of similar images query image. The final step of the problem brings a ordered set of similar images according to user requirement. When using binary signature will reduce the storage space and simplify data with complicated calculation models. From there, it reduces significantly the number of operations when performing the problem of similar images retrieval.
+
+%A specific example for each image has size $N \times N = 500 \times 500$, i.e. this image has 250,000 pixels. If we use the RGB color space then each pixel need three color values Red, Green, Bule; so we need 750,000 storage values. But if we describe image by binary signature which quantized on MPEG7 standard including 25 colors, with each dominant color is described by a bit string with length $m=10$ for describing a color rate on image, we need to store a binary string with length of 250 bit (equivalent 0.033\% in comparison with store by color vector).
+
+%On the base of the advantages when applying binary signature for the problem of similar image retrieval, we approach the method of image segmentation for creating binary signature based on $CIE{L^*}{a^*}{b^*}$ color space and DWF (\textit{Discrete Wavelet Frames}) in order to extract texture of image. This binary image has information of location, color and shape of interest object for be an input data of the problem of similar image retrieval. From there, we propose the similarity measure and performs clustering binary signature based on signature graph and Sig-SOM model. 
+
+In the experiment, we find out the similar images in content on image databases including COREL \cite{electronic:01}, COREL Wang \cite{electronic:02}, MSRDI \cite{electronic:03}. The paper has two main contributions that reduce the amount of query storage and speed up image query on the large image database. The paper is developed from my own ones including \cite{Thanh:2014a,Thanh:2014b}
+
+The contributions of the paper includes: creating binary signature to describe image's content; giving a similarity measure between images based on binary signatures; combining the signature graph and Sig-SOM based on binary signature; clustering binary signatures and store it on signature graph. From that, we present the algorithms based on combination between Sig-SOM and signature graph to retrieve quickly similar images.
+
+The next contents of the paper is organized as follows: \textbf{Section~\ref{Related Work}}, mentioning to related works to prove the feasibility and improvement of the proposed method; \textbf{Section~\ref{Binary Signature}}, to create meta-data of image content by binary signature. In \textbf{Section~\ref{Signature Graph}}, to present the signature graph structure based on binary signature. In \textbf{Section~\ref{Sig-SOM}}, to build Sig-SOM structure to cluster binary signature and give an algorithm of image retrieval, after that assessing the experimental results. A conclusion and discussion of future works are given in \textbf{Section~\ref{Conclusions}}.
+
+
+
+
+\section{Related Work}
+\label{Related Work}
+A number of works related to the query image's content have been published recently, such as extracting image objects based on the change of histogram value \cite{Liu:13}, similar image retrieval based on the comparison of characteristic regions and the similarity relationship of feature regions on images \cite{Bartolini:10}, color image retrieval based on the detection of local feature regions by Harris-Laplace \cite{Wang:10}, color image retrieval based on bit plane and $L^*a^*b^*$ color space \cite{Wang:13}, converting color space and building hash table in order to query the content of color images \cite{Tang:13}, the similarity of the images based on the combination of the image's colors and texture \cite{Singha:12}, using the EMD distance in image retrieval \cite{Bahri:11}, the image indexing and retrieval technique VBA (\textit{Variable-Bin Allocation}) basing on signature bit strings and S-Tree \cite{Yannis:02}, etc.
+
+There are many feature detection methods have been introduced \cite{Wang:13}, including angle and edge detector method was introduced in 1998 by Harris  M.Stephens, SIFT (\textit{Scale-Invariant Feature Transform}) was introduced in 2003 by D.Lowe based on the filter of convolution mask between image and DoG (\textit{Difference of Gaussians}) to approximate Laplacian operator of Gaussian function, SURF (\textit{Speeded Up Robust Features}) was introduced in 2006 by Bay et al, the point detector method based on Laplacian operator of Gaussian function in 2001 by Mikolajczyk  C.Schmid, etc.
+
+According to \cite{Acharya:05} proposed the method of approximate of texture based on human visual system. Wavelet transform is applied in analyzing texture and classifying images based on decompose of multi-resolution of images.
+
+According to \cite{Kumar:09} proposed automatic segmentation method based on Wavelet transform in order to create segmentation quickly and easily. The content of this paper shows the method which segments effectively on large images and implements easily more than other methods.
+
+Nevertheless, it is time-consuming as well as storage if we find similar images on the base of matching directly the content of images. So, we need to have methods of description of image contents by meta-data to retrieve similar images. 
+
+A number of works about image retrieval based on meta-data recently such as image retrieval using binary index and signature tree \cite{Yannis:03}, the similar image retrieval method based on binary signature \cite{Chappell:13}, color image retrieval based on binary signature \cite{Nascimento:02}, a color-based image retrieval technique that uses a spiral bit-string representation for the color content of an image \cite{Abdesselam:10}, image retrieval based on similarity measure EMD and S-Tree \cite{Thanh:2013}, color image retrieval using Hamming distance and S-Tree \cite{Thanh:2014}, image retrieval based on signature graph \cite{Thanh:2014a,Thanh:2014b}, multimedia content-based visual retrieval based on binary signature of SIFT \cite{Zhou:14}, image matching using a variable-length signature of image \cite{Liu:15}, video matching using binary signature \cite{Li:2005}, content-based video using geometric relation based on binary signature \cite{Ozkan:2014} etc.
+
+From the related works show that the method of image retrieval based on binary signature is very effective. So, we approach the method which creates binary signature based on interest object of segmented image. The binary signature describe shape, color and location of interest object. From there, we collect binary signatures to query quickly for similar images.
+
+\section{Creation of Image's Binary Signature}
+\label{Binary Signature}
+\subsection{Binary signature}
+
+According to ~\cite{}, an $m$-bits length binary signature is an bits array which contains $k$ bits 1 and $(m-k)$ bits 0 describing a data object.  
+
+
+
+In accordance with \cite{Chen:06}, the binary signature is formed by hashing the data objects, and it has $k$ bits $1$ and $(m - k)$ bits $0$ in the bit chain $[1..m{\rm{]}}$, where $m$ is the length of the binary signature. The data objects and the query object are encoded on the same algorithm. When the bits in the signature data object cover completely the ones in the query signature, the data object is a candidate for the query. There are three cases: (1) the data object matches the query object, it means that each bit in the signature ${s_q}$ of query object is covered with the ones in the signature ${s_i}$ of the data object (i.e., ${s_q} \wedge {s_i} = {s_q}$); (2) the object does not match the query (i.e., ${s_q} \wedge {s_i} \ne {s_q}$ ); (3) the signatures are compared and then given a \textit{false drop} result.
+
+In the paper, we approach the content-based image retrieval method based on binary signature to creates image's index. The binary signature of image with a length $n$ is a vector in space ${\sum ^n}$ to describe visual feature of image (with $n$ is the number of directions and $\sum  = \{ 0,{\rm{ }}1\} $ is a set of symbol). When using the binary signature, the input data of complexity computing model is simplified. So, it is reduced significantly the operators when we retrieve the similar images. Moreover, the binary signature applies easily the logic operators including AND, OR, NOT. On the basis of the operators, we create the similarity measure between images through binary signature.
+
+\subsection{Image Segmentation}
+%\label{Image Segmentation}
+Extraction of interest regions is one of important thing to find similar images in CBIR system. There are many methods of extracting interest regions which be regarded such as extracting center object of image \cite{Kim:2003}, extracting feature objects rely on color and texture of image \cite{Yoo:02}, etc.
+
+To uses the shape as the feature of image, we create segmented image to form interest objects. So, the binary signature describes the content of image based on chape, color and location.
+
+In the paper, for any image is extracted interest regions to create binary signature to describe content of image. This extraction is done on the base of image segment method by KMCC algorithm (\textit{K-Means-with-Connectivity-Constraint}) \cite{Kom:00}. The KMCC algorithm classifies pixels based on color, texture and location of center of interest region. The result of the method is a segmentation mask, i.e. to give a gray scale image with different gray level corresponding to interest regions.
+
+For any pixel $p(x,y)$, the color vector $I(p)$ and texture vector $T(p)$ are calculated. The color vector consists of three values of coordinates in color space $CIE{\rm{ }}{L^*}{a^*}{b^*}$ because this color space perceptually uniform, i.e. the numerical distance in this color space is approximately proportional to the perceived color difference  \cite{Mezaris:04}. Thus, the color vector of pixel $p$ is $I(p) = ({I_L}(p),{I_a}(p),{I_b}(p))$.
+
+The texture vector $T(p)$ is calculated by DWF transform (\textit{Discrete Wavelet Frames})  \cite{Mezaris:04}. The method is similar to DWT (\textit{Discrete Wavelet Transform}) to decompose intensity of image become to sub sample. The low-pass filter is used the Haar Wavelet methods with $H(z) = {\textstyle{1 \over 2}}(1 + {z^{ - 1}})$, where $H(z){|_{z = 1}} = 1$. The high-pass filter $G(z)$ is defined by the low-pass filter as $G(z) = zH( - {z^{ - 1}})$. The bank filter ${H_V}(z)$, ${G_i}(z)$, $i = 1,...,V$ is created by $H(z)$, $G(z)$, with ${H_{k + 1}}(z) = H({z^{{2^k}}}){H_k}(z)$, ${G_{k + 1}}(z) = G({z^{{2^k}}}){H_k}(z)$, with $k = 0,...,V - 1$, ${H_0}(z) = 1$.
+
+The standard deviation value reflects entropy around the expectation value and this entropy describe the texture of discrete signals. So, the standard deviation of all detail components on DWF transform is used as the feature texture.  For this reason, the texture vector corresponding to pixel $p$ is $T(p) = [{\sigma _1}(p),{\sigma _2}(p),...,{\sigma _{9 \times V}}(p)]$ which is calculated on neighboring square.
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.45\textwidth]{Figure/Fig1.eps}
+		\caption{The model of DWF transform}
+\end{figure}
+\begin{figure}[ht]
+	\centering
+		\includegraphics[height=2cm,width=2cm]{Figure/Fig01.eps}
+		\caption{The neighbor rectangle of pixel $p$. The texture vector $T(p)$ with $V = 2$ is $T(p)$ = (2.50, 1.25, 2.00, 1.00, 1.00, 0.50, 1.00, 0.50, 3.00, 1.50, 1.50, 0.75, 1.50, 0.75, 2.00, 1.00, 1.00, 0.50).}
+\end{figure}
+
+After extract the texture and color of image, we implement the process of cluster of all pixels on the image by K-Means method. In the first step chooses the center cluster rely on the contrast $C$ of the image. To quickly execute, the image $I$ is divided into non-overlap blocks which are called supper pixels. Therefore, the texture vector ${T^b}({b_l})$ and color vector ${I^b}({b_l})$ of the block ${b_l}$ are average values of texture vectors and color vectors of all pixels on the block. 
+\begin{definition}{} Giving the two arbitrary blocks ${b_l},{b_n}$, the contrast of image is defined as follows:
+\begin{equation}
+\footnotesize C = \max \{ d = \alpha ||{I^b}({b_l}) - {I^b}({b_n})|| + \beta ||{T^b}({b_l}) - {T^b}({b_n})||\}
+\label{eq:contrast}
+\end{equation}
+In the experiment, we use $\alpha  = \beta  = 0.5$. The background and the foreground of image corresponding to the blocks which have low energy and high energy, respectively.
+\label{Contrast-def}
+\end{definition}
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[height=2.5cm, width=8cm]{figure/BlocksImage.eps}
+		\caption{A sample image is divided into a set of blocks}
+		\label{block-fig}
+\end{figure}
+
+On the next step, we find the set of complement center $O$ (i.e. we search the nearest blocks with foreground rely on the measure $d$). In the experiment, we find the centers which have $d > \mu C$ (with $\mu  = 0.4$) to cluster all pixels on the image. The image segmentation algorithm is done as follows: (\textbf{Algorithm~\ref{Seg-alg}})
+
+\begin{algorithm}[!ht]
+\caption{Image Segmentation}
+\label{Seg-alg}
+\begin{algorithmic}[1]
+\REQUIRE The color image $I$
+\STATE \textit{Step 1:} Extract the texture vector $T(p)$ and intensity vector $I(p)$ for each pixel on image.
+\STATE \textit{Step 2:} Compute the center of blocks by calculates the average of texture vectors $T(p)$ and color vectors $I(p)$ of all pixels on each block.
+\STATE \textit{Step 3:} Calculate the contrast $C$ to form background and foreground of the image.
+\STATE \textit{Step 4:} Find the set of complement center $O$ based on the contrast $C$.
+\STATE \textit{Step 5:} Cluster all the pixels on the image $I$ rely on the set of center $O$.
+\STATE \textit{Step 6:} Create the mask $M$ with clustered pixels.
+\STATE \textit{Step 7:} Remove the regions have small area rely on the mask $M$.
+\STATE \textit{Step 8:} Return the mask $M$.
+\end{algorithmic}
+\end{algorithm}
+
+The result of process of segmentation is a mask (i.e gray image) to describe interest objects of image. On the basis of the mask, we compute the connected regions and remove the regions which have small area (the experiment removes the regions which have area less than $\theta = 5\%$ of image). The computing of area of regions is done by 4- neighboring algorithm as follows: (\textbf{Algorithm~\ref{Region-alg}})
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.2\textwidth]{figure/603merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/619merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/626merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/0007merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/0054merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/0059merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/0136merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/0156merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/0283merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/1045merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/107merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/1338merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/1786merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/178merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/188merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/200merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/202merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/242merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/278merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/299merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/3122merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/320merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/385merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/409merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/430merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/764merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/765merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/809merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/867merge.eps}
+		\includegraphics[width=0.2\textwidth]{figure/876merge.eps}
+		\caption{Some of segmented images}
+\end{figure}
+
+\begin{algorithm}[!ht]
+\caption{Compute the area of connected region}
+\label{Region-alg}
+\begin{algorithmic}[1]
+\REQUIRE The mask $M$ and the location $(r,c)$
+\STATE \textit{Step 1:} Initialize $S = 0$; Stack = $\emptyset$;
+\STATE \textit{Step 2:} Push(Stack, r, c);
+\STATE Step 3: 
+			\WHILE {Stack $ \ne \emptyset $}
+				\STATE $(r,c)$ = Pop(Stack);
+				\STATE $S = S + 1$;
+				\IF {$(r > 1)$ and $(M(r,c) = M(r-1,c)$}
+					\STATE  $Push(Stack,r-1,c)$;
+				\ENDIF
+				\IF {$(r < rows)$ and $(M(r,c)= M (r+1,c)$}
+					\STATE $Push(Stack,r+1,c)$;
+				\ENDIF
+				\IF {$(c > 1)$ and $M(r,c) == M (r,c-1)$}
+					\STATE $Push(Stack,r,c-1)$;
+				\ENDIF
+				\IF {$(c < columns)$ and $M(r,c) = M(r,c+1)$}
+					\STATE $Push(Stack,r,c+1)$;            
+				\ENDIF
+			\ENDWHILE
+\RETURN $S$;
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Creating Binary Signature of Image}
+After extracting the interest regions of image, we create binary signature to describe content of image. For any image is divided into $n \times k$ cells. Let $O$ be an interest region of image, the binary signature of the interest region is defined as follows:
+\begin{definition}{} The binary signature of the interest region $O$ of image $I$ is a bit-string $Si{g_I}(O) = {b_1}{b_2}...{b_N}$, where ${b_i} = 1$ if the $i^{th}$ cell of image $I$ has overlap with the interest region $O$, otherwise ${b_i} = 0$ with $N = n \times k$ be the number of cells of image.
+\label{Signature-def1}
+\end{definition}
+
+Because each image can extract different interest regions, so we need to combine binary signatures of all interest regions. The combination of the binary signatures is defined as follows:
+\begin{definition}{} Let ${O_1},{O_2},...,{O_m}$ be different interest regions of image $I$ and have binary signatures as $Si{g_I}({O_1}),Si{g_I}({O_2}),...,Si{g_I}({O_m})$, respectively. Then, the binary signature of all interest regions of image $I$ is $Sig_O^I = \bigcup\limits_{i = 1}^m {Si{g_I}({O_i})} $.
+\label{Signature-def2}
+\end{definition}
+
+For any image is quantized in the form of $M$ colors (in the experiment of the paper, we use MPEG7 standard). The binary signature describes colors of image be defined as follows: 
+\begin{definition}{} Let ${c_1},{c_2},...,{c_m}$ be indexes of dominance colors of interest region ${O_1},{O_2},...,{O_m}$ with ${c_i} \in {\rm{\{ }}1,2,...,M{\rm{\} }}$. Then, the binary signature describes colors of image $I$ based on interest regions ${O_1},{O_2},...,{O_m}$ as a bit-string $Sig_C^I = {b_1}{b_2}...{b_M}$ where ${b_i} = 1$ if $i \in {\rm{\{ }}{c_1},{c_2},...,{c_m}{\rm{\} }}$, otherwise ${b_i} = 0$.
+\label{Signature-def3}
+\end{definition}
+
+On the base of the binary signature of interest regions and the ones of dominance colors, the binary signature of image is defined as follows:
+\begin{definition}{} Giving image $I$, let $Sig_O^I = b_1^O...b_N^O$ and $Sig_C^I = b_1^C...b_M^C$ be the binary signature of interest regions and the ones of dominance colors of image $I$. Then, the binary signature of image $I$ is defined as follows:
+\begin{equation}
+ Sig(I) = Sig_O^I \oplus Sig_C^I = b_1^O...b_N^Ob_1^C...b_M^C
+\end{equation}
+\label{def:image-signature}
+\end{definition}
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.45\textwidth]{Figure/Fig3.eps}
+		\caption{An example about binary signature of image}
+\end{figure}
+
+\subsection{The Dis-Similarity Measure}
+The dis-similarity measure between two images is a necessary component when performing the process of similar image retrieval. However, each image is described in the form of binary signature, so the problem needs to build the dis-similarity measure between binary signatures from that to assess the similarity of images. Then, we define the dis-similarity measure as follows:
+\begin{definition}{} Let $Sig(I) = Sig_O^I \oplus Sig_C^I$ and $Sig(J) = Sig_O^J \oplus Sig_C^J$ be binary signatures of image $I$ and $J$. Then, the dis-similarity measure based on interest regions and colors in turn ${\mu _O}(sig_O^I,sig_O^J)$ and ${\mu _C}(sig_C^I,sig_C^J)$ are defined as follows:
+\begin{equation}
+{\mu _O}(sig_O^I,sig_O^J) \\= \frac{{\sum\limits_{i = 1}^N {(sig_O^I{\rm{[}}i]{\rm{ }}XOR{\rm{ }}sig_O^J{\rm{[}}i])} }}{N}
+\label{eq:mO}
+\end{equation}
+\begin{equation}
+{\mu _C}(sig_C^I,sig_C^J) \\= \frac{{\sum\limits_{i = 1}^N {(sig_C^I{\rm{[}}i]{\rm{ }}XOR{\rm{ }}sig_C^J{\rm{[}}i])} }}{M}
+\label{eq:mC}
+\end{equation}
+\end{definition}
+
+\begin{theorem}{} The function of dis-similarity measure ${\mu _\alpha }$ is a metric because of properties as follows:
+
+(1) Non-negative: ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J) \ge 0$ and ${\mu _\alpha } = 0 \Leftrightarrow sig_\alpha ^I = sig_\alpha ^J$
+
+(2) Symmetry: ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J) = {\mu _\alpha }(sig_\alpha ^J,sig_\alpha ^I)$
+
+(3) Triangle inequality: ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J) + {\mu _\alpha }(sig_\alpha ^J,sig_\alpha ^K) \ge {\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^K)$
+\label{theorem:dis-similarity}
+\end{theorem}
+\begin{proof}{}
+
+\textit{\textbf{(1) Non-negative}}
+
+Let $sig_\alpha ^I,sig_\alpha ^J$ be two binary signatures of images $I$ and $J$, with $sig_\alpha ^I{\rm{[}}i],sig_\alpha ^J{\rm{[}}i] \in \{ 0,1\} $, $i = 1,...,N$. 
+
+Then, $sig_\alpha ^I{\rm{[}}i{\rm{] }}XOR{\rm{ }}sig_\alpha ^J[i] \ge 0$. 
+
+Infer, $\mu (sig_\alpha ^I,sig_\alpha ^J) \ge 0$. 
+
+Hence, the function of dis-similarity measure ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J)$ is non-negative. 
+
+Assume that, ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J) = 0$ $ \Leftrightarrow $ $\frac{{\sum\limits_{i = 1}^N {(sig_\alpha ^I{\rm{[}}i]{\rm{ XOR }}sig_\alpha ^J{\rm{[}}i])} }}{N} = 0$ $ \Leftrightarrow $ $sig_\alpha ^I{\rm{[}}i] = sig_\alpha ^J{\rm{[}}i],i = 1,...,N$ $ \Leftrightarrow $ $\frac{{\sum\limits_{i = 1}^N {(sig_\alpha ^I{\rm{[}}i]{\rm{ XOR }}sig_\alpha ^J{\rm{[}}i])} }}{N} = 0$. 
+
+So, the function of dis-similarity measure ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J)$ is unique.
+
+\textit{\textbf{(2) Symmetry}}
+
+The XOR operator is commutative, then 
+
+${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J) = \frac{{\sum\limits_{i = 1}^N {(sig_\alpha ^I{\rm{[}}i]{\rm{ }}XOR{\rm{ }}sig_\alpha ^J{\rm{[}}i])} }}{N} \\= \frac{{\sum\limits_{i = 1}^N {(sig_\alpha ^J{\rm{[}}i]{\rm{ }}XOR{\rm{ }}sig_\alpha ^I{\rm{[}}i])} }}{N} = {\mu _\alpha }(sig_\alpha ^J,sig_\alpha ^I)$
+
+So, $\mu (sig_\alpha ^I,sig_\alpha ^J) = \mu (sig_\alpha ^J,sig_\alpha ^I)$. 
+
+Hence, the function of dis-similarity measure ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J)$ is symmetric.
+
+\textit{\textbf{(3) Triangle inequality}}
+
+Let $sig_\alpha ^I,sig_\alpha ^J,sig_\alpha ^K$ be three binary signatures of images $I$, $J$ and $K$. 
+
+So, ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J) + {\mu _\alpha }(sig_\alpha ^J,sig_\alpha ^K) = $ $\frac{1}{N}\sum\limits_{i = 1}^N {(sig_\alpha ^I[i]{\rm{ }}XOR{\rm{ }}sig_\alpha ^J[i]){\rm{ }} + {\rm{ }}(sig_\alpha ^J[i]{\rm{ }}XOR{\rm{ }}sig_\alpha ^K[i])} $
+
+We can use a truth table,  infer: $(si{g^I}[i]{\rm{ }}XOR{\rm{ }}si{g^J}[i]) + (si{g^J}[i]{\rm{ }}XOR{\rm{ }}si{g^K}[i])$ $ \ge $ $(si{g^I}[i]{\rm{ }}XOR{\rm{ }}si{g^K}[i])$. 
+
+Then, ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J) + {\mu _\alpha }(sig_\alpha ^J,sig_\alpha ^K)$ $ \ge $ ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^K)$. 
+
+Therefore, the function of dis-similarity measure ${\mu _\alpha }(sig_\alpha ^I,sig_\alpha ^J)$  satisfies the condition of the triangle inequality.
+\end{proof}
+
+\begin{definition}{}(\textit{The dis-similarity measure})
+Let $Sig(I) = Sig_O^I \oplus Sig_C^I$ and $Sig(J) = Sig_O^J \oplus Sig_C^J$ be binary signatures of image $I$ and $J$. Then, the dis-similarity measure between two images $I$ and $J$ is defined as follows:
+\begin{equation}
+\small \phi (I,J) = \alpha  \times ({\mu _O}(sig_O^I,sig_O^J)) + \beta  \times ({\mu _C}(sig_C^I,sig_C^J))
+\end{equation}
+with $\alpha ,\beta  \in {\rm{[}}0,1]$ be adjustment coefficients where $\alpha  + \beta  = 1$; $N$ is the number of cells of image; $M$ is the number of color to quantize image. (In the experiment of the paper, we use $N=40$ and $M = 25$)
+\label{def:dis-similarity}
+\end{definition}
+
+\begin{theorem}{} The dis-similarity measure $\phi (I,J)$ in \textbf{\textit{Definition~\ref{def:dis-similarity}}} is a metric.
+\label{theorem:metric}
+\end{theorem}
+\begin{proof}{}
+According to \textbf{\textit{Theorem~\ref{theorem:dis-similarity}}}, then ${\mu _O}(sig_O^I,sig_O^J)$ and ${\mu _C}(sig_C^I,sig_C^J)$ are metrics. Infer, $\phi (I,J)$ is a metric.
+\end{proof}
+
+In the content of the paper, we use the dis-similarity measure $\phi $ to assess the similar level between two images. So, the dis-similarity measure $\phi $ is the similarity measure. On the base of the similarity measure between two images, we perform the query process of similar images. For any query image, we finds out relevant images based on the similarity measure. The similar images retrieval are defined as follows:
+\begin{definition}{} Giving image database $\Im $, let $I$ be a query image. Let ${\Re _I} = \{ J_i^I|(J_i^I \in \Im ) \wedge (\phi (I,J_i^I) \le \phi (I,J_j^I) \Leftrightarrow J_i^I \succ J_j^I) \wedge (i \ne j) \wedge (i,j = 1,...,n)\} $ be an ordered set based on the measure $\phi $. A set of similar images $Q \subset \Im $ including $k$ similar images is defined as follows:
+\begin{equation}
+Q = \{ {J_i} \in \Im |\phi (I,{J_i}) \le \theta ,{\rm{ }}\forall J \in \Im ,i = 1,...,|Q|\}
+\end{equation}
+where $\theta $ is the threshold of $\phi (I,{J_i})$
+\end{definition}
+\begin{theorem}{} If $I$ is the query image, then the set of similar images $Q \subset \Im $  is an ordered set on the relation $ \succ $.
+\end{theorem}
+\begin{proof}{}
+
+\textit{\textbf{(1) Symmetry:}} If $I$ is the query image and $J \in Q$ is an arbitrary image, then $\phi (I,J) = \phi (I,J)$, i.e. satisﬁes the condition $\phi (I,J) \le \phi (I,J)$. Hence, $J \succ J$, i.e. $Q$ has the symmetry on $ \succ $.
+
+\textit{\textbf{(2) Antisymmetry:}} Given ${J_i},{J_j} \in Q$ with $i \ne j$. Suppose that ${J_i} \succ {J_j}$ (i.e. $\phi (I,{J_i}) \le \phi (I,{J_j})$) and ${J_i} \ne {J_j}$ as a result of $\phi (I,{J_i}) < \phi (I,{J_j})$. In addition, \textbf{\textit{Theorem~\ref{theorem:metric}}} show that $\phi $ is a metric. Therefore, we have $\phi (I,{J_j}) \ngeq \phi (I,{J_i})$. So, if ${J_i} \succ {J_j}$ then ${J_j} \nsucc {J_i}$. Hence, $Q$ has an antisymmetry on $ \succ $.
+
+\textit{\textbf{(3) Transitivity:}} Let ${J_1},{J_2},{J_3}, \in Q$ be three images corresponding to image query $I$, suppose that ${J_1} \succ {J_2}$ and ${J_2} \succ {J_3}$, i.e $\phi (I,{J_1}) \le \phi (I,{J_2})$ and $\phi (I,{J_2}) \le \phi (I,{J_3})$. According to \textit{\textbf{Theorem~\ref{theorem:metric}}}, $\phi $ is a metric, so $\phi (I,{J_1}) \le \phi (I,{J_3})$. Infer, if ${J_1} \succ {J_2}$ and ${J_2} \succ {J_3}$ then ${J_1} \succ {J_3}$, i.e. $Q$ has transitivity on  $ \succ $.
+
+From (1), (2), (3) we infer the set of similar images $Q \subset \Im $ is an ordered set on the relation $ \succ $.
+\end{proof}
+
+\section{Signature Graph}
+\label{Signature Graph}
+After creating binary signature and similarity measure between the images, the problem needs to solve that query quickly and reduce the query storage. So, we should to build the data structure to store the binary signature as well as to describe the relationship between the images. In the paper, we build the graph structure in order to describe the similar relationship based on the binary signature (\textit{\textbf{Definition~\ref{def:image-signature}}}) and the similarity measure (\textit{\textbf{Definition~\ref{def:dis-similarity}}}). This graph structure is called SG (\textit{Signature Graph}), for any vertex in the graph including the pair of identification $oi{d_I}$ and signature $si{g_I}$ corresponding to image $I$. The weight between two vertexes is the similarity measure $\phi $. This signature graph is developed from my own paper \cite{Thanh:2014b}.
+
+The signature graph describes the relationship among the binary signatures, which describes the relationship among image's contents. The SG is the graph which has the weight, including a set of vertexes ${V_{SG}}$ and a set of edges ${E_{SG}}$ is defined as follows:
+\begin{definition}{} The Signature Graph $SG = \left( {V,{\rm{ }}E} \right)$ is the graph which describes the relationship among the images, has a set of vertexes $V = \{ \langle oi{d_I},Sig({R^I})\rangle |I \in \Im \} $ and a set of edges $E = \{ \langle I,J\rangle |\phi (I,J) = \phi ({R^I},{R^J}) \le \theta ,{\rm{ }}\forall I,J \in \Im \} $. With the weight of each edge $\langle I,J\rangle $ is the similarity measure $\phi (I,J)$, $\theta $ is a threshold value and $\Im $ is an image database. 
+\end{definition}
+
+For any vertex $v \in V$ in $SG$ determines $k$ nearest element based on similarity measure. However, if the number of images are large, it would be difficult to determine the set of similar images corresponding to the query image. Therefore, the we build the notion of S-\textit{k}Graph so that each vertex include $k$ nearest images and call as $k$-\textit{neighboring}.
+
+For any $k$-\textit{neighboring}, we build a cluster including the similar images. This cluster is defined as follows: 
+\begin{definition}{} A cluster ${V_i}$ has center ${I_i}$ with ${k_i}\theta $ is a radius, be defined as ${V_i} = {V_i}({I_i}) = \{ J|\phi ({I_i},J) \le {k_i}\theta ,J \in \Im ,{\rm{ }}i = 1,...,n\} $, ${k_i} \in {N^*}$.
+\end{definition}
+
+On the base of clusters, we define the data structure S-\textit{k}Graph including vertexes as clusters and the weight between two vertexes as the similarity measure $\phi $. The data structure S-\textit{k}Graph (in \textbf{Fig.~\ref{fig:SG}}) is defined as follows:
+\begin{definition}{} Let $\Omega  = \{ {V_i}|i = 1,...,n\} $ be a set of clusters, with ${V_i} \cap {V_j} = \emptyset ,i \ne j$. The S-\textit{k}Graph = $\left( {{V_{SG}},{\rm{ }}{E_{SG}}} \right)$ is the graph which has the weight, including a set of vertexes ${V_{SG}}$ and a set of edges ${E_{SG}}$ is defined as follows:
+\begin{equation}
+\footnotesize {V_{SG}} = \Omega  = {\rm{\{ }}{V_i}|\exists !{I_{{i_0}}} \in {V_i},\forall I \in {V_i},\phi ({I_{{i_0}}},I) \le {k_{{i_0}}}\theta{\rm{\} }}
+\end{equation}
+\begin{equation}
+\footnotesize {E_{SG}} = \{ \langle {V_i},{V_j}\rangle |{V_i},{V_j} \in {V_{SG}},d({V_i},{V_j}) = \phi ({I_{{i_0}}},{J_{{j_0}}})\}
+\end{equation}
+with $d({V_i},{V_j})$ is the weight between two clusters and $\forall I \in {V_i},\phi ({I_{{i_0}}},I) \le {k_{{i_0}}}\theta $
+\label{def:SG}
+\end{definition}
+
+With each image needs to classify in clusters through the data structure S-\textit{k}Graph. So, we need to have the rule of distribution in clusters of the S-\textit{k}Graph. This rules are defined as follows:
+\begin{definition}{} (\textit{The Rules of Distribution of Images}) Giving set $\Omega  = \{ {V_i}|i = 1,...,n\} $ is a set of clusters, with ${V_i} \cap {V_j} = \emptyset ,i \ne j$, let ${I_0}$ be an image needs to distribute in a set of clusters $\Omega $, let ${I_m}$ be a center of cluster ${V_m}$, so that $(\phi ({I_0},{I_m}) - {k_m}\theta ) = \min \{ (\phi ({I_0},{I_i}) - {k_i}\theta ),i = 1,...,n{\rm{\} }}$, with ${I_i}$ is a center of cluster ${V_i}$. There are three cases as follows:
+
+(1) If $\phi ({I_0},{I_m}) \le {k_m}\theta $ then the image ${I_0}$ is distributed in cluster ${V_m}$.
+
+(2) If $\phi ({I_0},{I_m}) > {k_m}\theta $ then setting ${k_0} = \left[ {{{(\phi ({I_0},{I_m}) - {k_m}\theta )} \mathord{\left/
+ {\vphantom {{(\phi ({I_0},{I_m}) - {k_m}\theta )} \theta }} \right.
+ \kern-\nulldelimiterspace} \theta }} \right]$, at that time: 
+
+(2.1) If ${k_0} > 0$ then creating cluster ${V_0}$ with center ${I_0}$ and radius is ${k_0}\theta $, at that time $\Omega  = \Omega  \cup {\rm{\{ }}{V_0}{\rm{\} }}$.
+
+(2.2) Otherwise (i.e. ${k_0} = 0$), the image ${I_0}$ is distributed in cluster ${V_m}$ and $\phi ({I_0},{I_m}) = {k_m}\theta $.
+\label{def:rulesSG}
+\end{definition}
+
+For any image needs to exist a cluster in the S-\textit{k}Graph so that images are classified. Moreover, to avoid the invalid data in clusters, the images are distributed in unique cluster. The \textit{\textbf{Theorem~\ref{theorem:condition}}} and \textit{\textbf{Theorem~\ref{theorem:unique-cluster}}} show the unique distribution.
+
+\begin{theorem}{}
+Given the S-\textit{k}Graph = $\left( {{V_{SG}},{\rm{ }}{E_{SG}}} \right)$. Let $\langle {V_i},{V_j}\rangle  \in {E_{SG}}$ and ${I_{{i_0}}},{J_{{j_0}}}$ be a center of ${V_i},{V_j}$. At that time, $d({V_i},{V_j}) = \phi ({I_{{i_0}}},{J_{{j_0}}}) > ({k_{{i_0}}} + {k_{{j_0}}})\theta $, with $\forall I \in {V_i},\phi ({I_{{i_0}}},I) \le {k_{{i_0}}}\theta $ and $\forall J \in {V_j},\phi ({J_{{j_0}}},J) \le {k_{{j_0}}}\theta $.
+\label{theorem:condition}
+\end{theorem}
+\begin{proof}{}
+So $\forall I \in {V_i},\phi ({I_{{i_0}}},I) \le {k_{{i_0}}}\theta $ and $\forall J \in {V_j},\phi ({J_{{j_0}}},J) \le {k_{{j_0}}}\theta $. That $\forall I' \in Boundary({V_i}),\forall J' \in Boundary({V_j})$ then $\phi ({I_{{i_0}}},I') = {k_{{i_0}}}\theta $ and $\phi ({J_{{j_0}}},J') = {k_{{j_0}}}\theta $. Moreover, because ${V_{SG}} = \Omega $ is a set of unconnected cluster, so  ${V_i} \cap {V_j} = \emptyset $ that $\phi (I',J') > 0$.
+\\Infer: $\forall I' \in Boundary({V_i}),\forall J' \in Boundary({V_j})$ then $\phi ({I_{{i_0}}},I') + \phi (I',J') + \phi ({J_{{j_0}}},J') > ({k_{{i_0}}} + {k_{{j_0}}})\theta $. Otherwise, because $\phi $ is a metric, so $\phi ({I_{{i_0}}},I') + \phi (I',J') + \phi ({J_{{j_0}}},J') \ge \phi ({I_{{i_0}}},{J_{{j_0}}})$. And $\exists {I'_0} \in Boundary({V_i}),\exists {J'_0} \in Boundary({V_j})$ so as $\phi ({I_{{i_0}}},{I'_0}) + \phi ({I'_0},{J'_0}) + \phi ({J_{{j_0}}},{J'_0}) = \phi ({I_{{i_0}}},{J_{{j_0}}})$.
+\\ Therefore, $\phi ({I_{{i_0}}},{J_{{j_0}}}) > ({k_{{i_0}}} + {k_{{j_0}}})\theta $.
+\end{proof}
+
+\begin{theorem}{}
+If each image $I$ is distributed in a set of clusters $\Omega  = \{ {V_i}|i = 1,...,n\} $, then it belongs to an unique cluster.
+\label{theorem:unique-cluster}
+\end{theorem}
+\begin{proof}{}
+Let $I$ be an any image, suppose that $\exists {V_i},{V_j}$ as two clusters, so ${V_i} \ne {V_j}$ and $(I \in {V_i}) \wedge (I \in {V_j})$. Setting ${I_i},{I_j}$ in turn as two centers cluster ${V_i},{V_j}$ we have $\phi ({I_i},I) \le {k_i}\theta $ and $\phi ({I_j},I) \le {k_j}\theta $. Thus, $\phi ({I_i},I) + \phi ({I_j},I) \le ({k_i} + {k_j})\theta $. Furthermore, because $\phi $ is a metric, we have $\phi ({I_i},I) + \phi ({I_j},I) \ge \phi ({I_i},{I_j})$. Otherwise, ${I_i},{I_j}$ in turn as two centers cluster ${V_i},{V_j}$ so that $\phi ({I_i},{I_j}) > ({k_i} + {k_j})\theta $. Hence, $\phi ({I_i},I) + \phi ({I_j},I) \ge \phi ({I_i},{I_j}) > ({k_i} + {k_j})\theta $ and $\phi ({I_i},I) + \phi ({I_j},I) \le ({k_i} + {k_j})\theta $. 
+\\For this reason, the supposition is illogical. I.e each image $I$ is only distributed in an unique cluster.
+\end{proof}
+
+In order to avoid invaliding data, the rules of distribution (\textit{\textbf{Definition~\ref{def:rulesSG}}}) needs to ensure that the image is classified in an unique cluster. \textit{\textbf{Theorem~\ref{theorem:occurs}}}, \textit{\textbf{theorem~\ref{theorem:exist-cluster}}} and \textit{\textbf{Theorem~\ref{theorem:distribute}}} show this problem.
+\begin{theorem}{}
+If the value $\phi (I,{I_m}) - {k_m}\theta  \le 0$ then it only occurs at one unique ${I_m}$.
+\label{theorem:occurs}
+\end{theorem}
+\begin{proof}{}
+Suppose that $\exists {I_0}$ is a center of cluster ${C_0} \in \Omega $ so that $\phi (I,{I_0}) - {k_0}\theta  \le 0$ $ \Leftrightarrow $ $\phi (I,{I_0}) \le {k_0}\theta $, i.e $I$ belongs to cluster ${C_0}$. Otherwise, according to the supposition, $\phi (I,{I_m}) - {k_m}\theta  \le 0$, i.e  $I$ belongs to cluster ${C_m} \ne {C_0}$. It means that $I$ belongs to two different clusters and pursues to \textit{\textbf{Theorem~\ref{theorem:unique-cluster}}}, for any image $I$ only belongs to an unique cluster. Thus, the supposition is illogical. Inferring, if the value is $\phi (I,{I_m}) - {k_m}\theta  \le 0$, it only occurs at one unique ${I_m}$.
+\end{proof}
+\begin{theorem}{}
+If $\Omega  = \{ {V_i}|i = 1,...,n\} $ be a set of clusters and $I$ is an image then it exists cluster ${V_{{i_0}}} \in \Omega $ so that $I \in {V_{{i_0}}}$.
+\label{theorem:exist-cluster}
+\end{theorem}
+\begin{proof}{}
+According to \textit{\textbf{Definition~\ref{def:rulesSG}}}, for any image $I$ also exists a cluster ${V_{{i_0}}} \in \Omega $ so that $I \in {V_{{i_0}}}$.
+\end{proof}
+
+\begin{theorem}{}
+For any image $I$ is distributed in an unique cluster ${C_{{i_0}}}\in \Omega$.
+\label{theorem:distribute}
+\end{theorem}
+\begin{proof}{}
+According to \textit{\textbf{Definition~\ref{def:rulesSG}}}, for any image $I$ also exists a cluster ${V_{{i_0}}} \in \Omega $ so that $I \in {V_{{i_0}}}$. According to \textit{\textbf{Theorem~\ref{theorem:unique-cluster}}}, any image $I$ is only distributed in an unique cluster. Inferring, any image $I$ is distributed in an unique cluster ${C_{{i_0}}} \in \Omega $.
+\end{proof}
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.3\textwidth]{Figure/Fig4.eps}
+		\caption{The model of S-\textit{k}Graph}
+		\label{fig:SG}
+\end{figure}
+
+On the base of the similarity measure $\phi$, the S-\textit{k}Graph is shown in \textit{\textbf{Definition~\ref{def:SG}}} and the rules of distribution of image are shown in \textit{\textbf{Definition~\ref{def:rulesSG}}}, the paper proposes the algorithm to create the data structure S-\textit{k}Graph. With the input image database $\Im $ and the threshold $k\theta$, we need to return the S-\textit{k}Graph (In the experiment of this paper, we initialize $k=1$, $\theta = 0.1$). Firstly, we initialize the set of vertex ${V_{SG}} = \emptyset $ and initialize the set of edge ${E_{SG}} = \emptyset $, after that create the first cluster. With each image $I$ we evaluate the distance $\phi $ with the center of cluster and to find out the nearest cluster according to $(\phi (I,I_m^0) - {k_m}\theta ) = \min \{ (\phi (I,I_i^0) - {k_i}\theta ),i = 1,...,n{\rm{\} }}$. If the condition $\phi (I,I_m^0) \le {k_m}\theta $ is satisfied, the image $I$ is distributed in cluster ${V_m}$. Otherwise, we consider the rules of distribution as shown in \textit{\textbf{Definition~\ref{def:rulesSG}}} to classify the image $I$ into appropriate cluster. The cost of the construction of the S-\textit{k}Graph is $O(m \times n)$, where $n$ is the number of signature and $m$ is the number of cluster. In the experiment, if we build S-\textit{k}Graph on COREL database, then $n = 1,000$, $m = 144$; on Wang database then $n = 10,800$ and $m = 875$; on MSRDI database then $n = 16,710$, $m = 499$; on imageCLEF database then $n = 20,000$, $m = 115$. So, the average value of $m$ is less than 10\% in comparison with $n$. This algorithm is as follows: (\textbf{Algorithm~\ref{alg:SkGraph}})
+\begin{algorithm}[!ht]
+\caption{Create the S-\textit{k}Graph}
+\label{alg:SkGraph}
+\begin{algorithmic}[1]
+\REQUIRE Image database $\Im $ and threshold $k\theta $
+\STATE ${V_{SG}} = \emptyset$; ${E_{SG}} = \emptyset$; ${k_I} = 1$; $n = 1$;
+\FOR {$\forall I \in \Im $}
+	\IF {${V_{SG}} = \emptyset $}
+		\STATE $I_n^0 = I;$ $r = {k_I}\theta$;
+		\STATE Initialize cluster ${V_n} = \langle I_n^0,r,\phi  = 0\rangle$;
+		\STATE ${V_{SG}} = {V_{SG}} \cup {V_n}$;
+	\ELSE
+		\STATE $(\phi (I,I_m^0) - {k_m}\theta ) = \min \{ (\phi (I,I_i^0) - {k_i}\theta ),i = 1,...,n{\rm{\} }}$;
+		\IF {$\phi (I,I_m^0) \le {k_m}\theta $}
+			\STATE ${V_m} = {V_m} \cup \langle I,{k_m}\theta ,\phi (I,I_m^0)\rangle$;
+		\ELSE 
+			\STATE ${k_I} = \left[ {{{(\phi (I,I_0^m) - {k_m}\theta )} \mathord{\left/
+							{\vphantom {{(\phi (I,I_0^m) - {k_m}\theta )} \theta }} \right.
+							\kern-\nulldelimiterspace} \theta }} \right];$
+			\IF {${k_I} > 0$}
+				\STATE $I_{n + 1}^0 = I;$ $r = {k_I}\theta$;
+				\STATE Initialize cluster ${V_{n + 1}} = \langle I_{n + 1}^0,r,\phi  = 0\rangle$;
+				\STATE ${V_{SG}} = {V_{SG}} \cup {V_{n + 1}}$;
+				\STATE ${E_{SG}} = {E_{SG}} \cup {\rm{\{ }}\langle {V_{n + 1}},{V_i}\rangle |\phi (I_{n + 1}^0,I_i^0) \le k\theta ,i = 1,...,n{\rm{\} }};$
+				\STATE $n = n + 1$;
+			\ELSE
+				\STATE $\phi (I,I_m^0) = {k_m}\theta$;
+				\STATE ${V_m} = {V_m} \cup \langle I,{k_m}\theta ,\phi (I,I_m^0)\rangle$;
+			\ENDIF
+		\ENDIF
+	\ENDIF
+	\ENDFOR
+	\RETURN S-\textit{k}Graph = $({V_{SG}},{E_{SG}})$;
+\end{algorithmic}
+\end{algorithm}
+
+\section{Image Retrieval on Self-Organizing Map}
+\label{Sig-SOM}
+\subsection{Sig-SOM Structure} 
+The classification is performed with the input data as the image signature $Sig(I) = {b_1}{b_2}...{b_N}$. After classifying, this signature belongs to a cluster ${V_j} = \langle I_j^0,{k_j}\theta \rangle $, with $I_j^0$ as a center of cluster ${V_j}$ and ${k_j}\theta $ is a radius of cluster.
+
+For the classification performs quickly and efficiently, we applies the Sig-SOM network model (in \textbf{Fig.~\ref{fig:Sig-SOM}}) in order to classify binary signatures. The Sig-SOM structure is defined as follows:
+
+\begin{definition}{Sig-SOM Structure} The Sig-SOM network has two layer including input layer and output layer. The input layer has $N$ items corresponding to the binary signature $Sig(I) = {b_1}{b_2}...{b_N}$, with ${b_i} \in \{ 0,1\} $. The output layer has $n$ cluster corresponding to the signature graph $S - kGraph = ({V_{SG}},{E_{SG}})$. Each the ${j^{th}}$ cluster in output layer is fully connected to $N$ items in input layer. The edge from the ${i^{th}}$ item in input layer to the  ${j^{th}}$ cluster has a weight as ${w_{ij}} \in \{ 0,1\}$.
+\end{definition}
+
+\begin{definition}{The winner cluster} Let $Sig(I) = {b_1}{b_2}...{b_N}$ be a binary signature of image $I$. Let $SIG = \{ Sig(I_1^0),Sig(I_2^0),...,Sig(I_n^0)\}$ be a set of binary signature corresponding to the center of clusters in the output layer. The winner cluster ${V_m}$ corresponding to the input data $Sig(I) = {b_1}{b_2}...{b_N}$ satisfy the condition as $\delta (I,I_m^0) = \max \{ \delta (I,I_i^0)|\delta (I,I_i^0) = \alpha  \times d(sig_O^I,sig_O^{{I_i}}) + \beta  \times d(sig_C^I,sig_C^{{I_i}}),i = 1,...,n\}$, with $\alpha ,\beta  \in [0,1],\alpha  + \beta  = 1$
+\begin{equation}
+\small d(sig_O^I,sig_O^{{I_i}}) = \frac{{\sum\limits_{i = 1}^N {NOT(Sig_O^I[i]{\rm{ }}XOR{\rm{ }}Sig_O^{{I_i}}[i])} }}{N}
+\label{eq:dO}
+\end{equation}
+\begin{equation}
+\small d(sig_C^I,sig_C^{{I_i}}) \\= \frac{{\sum\limits_{i = 1}^M {NOT(Sig_C^I[i]{\rm{ }}XOR{\rm{ }}Sig_C^{{I_i}}[i])} }}{M}
+\label{eq:dI}
+\end{equation}
+At that time, the winner cluster ${V_m}$ is connected directly with the winner vector ${W_m}$
+\label{def:winner-cluster}
+\end{definition}
+
+\begin{theorem}{}
+If ${V_m}$ is winner cluster corresponding to input data $Sig(I) = {b_1}{b_2}...{b_N}$ then the similarity measure $\phi (I,I_m^0)$ is minimum, i.e. $\phi (I,I_m^0) = \min \{ \phi (I,I_i^0)|i = 1,...,|{V_{SG}}|\} $ where $I_i^0$ is a center of cluster ${V_i} \in {V_{SG}}$.
+\end{theorem}
+\begin{proof}{}
+
+According to the equation (\ref{eq:mO})(\ref{eq:dO}), we have: ${\mu _O}(sig_O^I,sig_O^J) + d(sig_O^I,sig_O^J)$ = $\frac{{\sum\limits_{i = 1}^N {(sig_O^I[i]{\rm{ }}XOR{\rm{ }}sig_O^J[i])} }}{N}$ + $\frac{{\sum\limits_{i = 1}^N {NOT(sig_O^I[i]{\rm{ }}XOR{\rm{ }}sig_O^J[i])} }}{N}$ = $\frac{1}{N}\sum\limits_{i = 1}^N {\left[ {(sig_O^I[i]{\rm{ }}XOR{\rm{ }}sig_O^J[i]) + NOT(sig_O^I[i]{\rm{ }}XOR{\rm{ }}sig_O^J[i])} \right]} $ = $1$.
+
+Infer, ${\mu _O}(sig_O^I,sig_O^J) = 1 - d(sig_O^I,sig_O^J)$.
+
+With similar method, we have ${\mu _C}(sig_C^I,sig_C^J) = 1 - d(sig_C^I,sig_C^J)$.
+
+Thus, $\phi (I,I_m^0) = (\alpha  + \beta ) - (\alpha  \times {\mu _O}(sig_O^I,sig_O^{I_0^m}) + \beta  \times {\mu _C}(sig_C^I,sig_C^{I_0^m}))$ = $1 - \delta (I,I_m^0)$.
+
+So, if $\delta (I,I_m^0) = \max \{ \delta (I,I_i^0),i = 1,...,n\} $ then $\phi (I,I_m^0) = \min \{ \phi (I,I_i^0)|i = 1,...,|{V_{SG}}|\} $.
+\end{proof}
+
+However, the output data of this network is the cluster ${V_i}$ combine with the center cluster ${I_j^0}$ and radius of cluster ${k_j}\theta $. On the other hand, for any input image signature can be classified in a cluster but may not satisfy the condition for radius of cluster, and thus this network training process allow to increase the number of output clusters. So, we propose the Sig-SOM network model in order to classify the input data including image signatures $Sig(I) = {b_1}{b_2}...{b_N}$ and it gives the output data as clusters ${V_j} = \langle {I_j^0},{k_j}\theta \rangle $, at the same time the Sig-SOM network allow to create more new output classifications in order to collect the cluster of image signatures dissatisfy condition on the current clusters. Between the input layer and the output layer of Sig-SOM network are full connected  via connected weight vectors ${{\rm{W}}_1},{{\rm{W}}_2},...,{{\rm{W}}_n}$, with ${{\rm{W}}_j} = ({w_{1j}},{w_{2j}},...,{w_{Nj}})$, ${w_{ij}} \in \{ 0,1\} $.
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.35\textwidth]{Figure/SOM-SG.eps}
+		\caption{The model of Signature Self-Organizing Map}
+		\label{fig:Sig-SOM}
+\end{figure}
+
+\subsection{Network Training Algorithm}
+For the classification is accurate, Sig-SOM network must spend a training process. This process adjusts connected weight vector ${{\rm{W}}_j} = ({w_{1j}},{w_{2j}},...,{w_{Nj}})$ in order to classify accurately the input image signatures. 
+
+For any image signature $Sig(I) = {b_1}{b_2}...{b_N}$ in the training data of Sig-SOM network, we perform the calculation of the measure $\delta ({I_i},{W_i})$ (in \textit{\textbf{Definition~\ref{def:winner-cluster}}}), $\delta ({I_i},{W_i}) \in {\rm{[}}0,1]$ corresponds with connected weights ${{\rm{W}}_j} = ({w_{1j}},{w_{2j}},...,{w_{Nj}})$. On the base of this measure, we select the winner cluster ${V_J}$, i.e. $\delta ({I_i},{W_J}) = \max \{ \delta ({I_i},{W_j})|j = 1,2,...,n\} $, after that the algorithm checks the corresponding condition on each cluster or creating new classification on Sig-SOM network.
+\begin{definition}{The rule of training}
+Giving $Sig(I) = {b_1}{b_2}...{b_N}$ is a binary signature of image $I$. Let ${W_m} = ({w_{1m}},{w_{2m}},...,{w_{Nm}})$ be a connected vector at the time $t$. The process of training at the time $t + 1$ is defined as follows:
+\begin{equation}
+w_{i,m}^{(t + 1)} = {b_i} \vee w_{i,m}^{(t)}
+\end{equation}
+
+\begin{equation}
+w_{i,j}^{(t + 1)} = \neg {b_i} \wedge w_{i,j}^{(t)}
+\end{equation}
+with $j \ne m$ and $j = 1,...,n$
+\end{definition}
+
+\begin{theorem}{}
+Giving the input data $Sig(I) = {b_1}{b_2}...{b_N}$. The connected vector ${W_m} = ({w_{1m}},{w_{2m}},...,{w_{Nm}})$ at the time $t + 1$ is more optimal than at the time $t$, i.e., $\delta (Sig(I),W_m^{(t)}) \le \delta (Sig(I),W_m^{(t + 1)})$
+\end{theorem}
+\begin{proof}{}
+
+we have $\delta (I,W_m^{(t + 1)}) = \alpha  \times d(sig_O^I,sig_O^{{W^{(t + 1)}}}) + \beta  \times d(sig_C^I,sig_C^{{W^{(t + 1)}}})$
+= $\alpha  \times \frac{{\sum\limits_{i = 1}^N {NOT({b_i}{\rm{ }}XOR{\rm{ }}w_{i,m}^{(t + 1)})} }}{N} + \beta  \times \frac{{\sum\limits_{i = 1}^M {NOT({b_i}{\rm{ }}XOR{\rm{ }}w_{i.m}^{(t + 1)})} }}{M}$
+= $\alpha  \times \frac{{\sum\limits_{i = 1}^N {NOT({b_i}{\rm{ }}XOR{\rm{ (}}{b_i} \vee w_{i,m}^{(t)}{\rm{)}})} }}{N} + \beta  \times \frac{{\sum\limits_{i = 1}^M {NOT({b_i}{\rm{ }}XOR{\rm{ }}({b_i} \vee w_{i,m}^{(t)}))} }}{M}$
+= $\alpha  \times \frac{{\sum\limits_{i = 1}^N {NOT({b_i}{\rm{ }}XOR{\rm{ }}w_{i,m}^{(t)})} }}{N} + \beta  \times \frac{{\sum\limits_{i = 1}^M {NOT({b_i}{\rm{ }}XOR{\rm{ }}w_{i,m}^{(t)})} }}{M}$
+
+Infer, $\delta (Sig(I),W_m^{(t)}) \le \delta (Sig(I),W_m^{(t + 1)})$
+\end{proof}
+After the training process, Sig-SOM network has new connected weights. This training network is a premise for the similar image query corresponding to each query image. Sig-SOM network training algorithm is defined as follows: (\textbf{Algorithm~\ref{alg:SOM-training}})
+
+\begin{algorithm}[!ht]
+\caption{SOM Network Training}
+\label{alg:SOM-training}
+\begin{algorithmic}[1]
+\REQUIRE Training dataset $\Gamma  = {\rm{\{ }}Sig({I_i}) = ({b_{i1}},{b_{i2}},...,{b_{iN}})|i = 1,...,K{\rm{\} }}$
+
+\textbf{\textit{Step 1: }} \textit{Initializing Network}
+\STATE Initializing training set $\Gamma $ including $K$ vectors $Sig({I_i}) = ({b_{i1}},...,{b_{iN}})$ as binary signatures describe the set of images $\Im {\rm{  =  \{ }}{I_i}|i = 1,...,K\}$;
+\STATE Initializing output layer including $n$ cluster $\Omega  = {\rm{\{ }}{V_j} = \langle {C_j},{k_j}\theta \rangle {\rm{\} }}$, with ${C_j} = ({c_{j1}},...,{c_{jN}}),{c_{jk}} \in \{ 0,1\} $, $k = 1,...,N,j = 1,...,n$; 
+\STATE Initializing randomly a weight set ${\rm{W}} = {\rm{\{ }}{{\rm{W}}_j}|{{\rm{W}}_j} = ({w_{{\rm{1j}}}},{w_{2j}},...,{w_{nj}}),{w_{ij}} \in \{ 0,1\} ,i = 1,2,...,n\}$;
+\STATE With each input vector $Sig({I_i})$ is done ${\rm{S  = }}\emptyset$ and implemented from \textit{\textbf{Step 2 }}to \textit{\textbf{Step 4}} as follows: 
+		
+\textbf{\textit{Step 2: }} \textit{Selecting winner cluster with $Sig({I_i})$}
+\IF {${\rm{W  = }} S$}
+\STATE go to  \textit{ Step 4};
+\ELSE
+\STATE Calculating $\delta ({I_i},{W_i})$ with each weight vector ${W_j} \in {\rm{W\backslash S}}$ of clusters at output layer;
+\STATE Selecting winner cluster ${V_J}$, i.e. $\delta ({I_i},{W_J}) = \max \{ \delta ({I_i},{W_j})|j = 1,2,...,n\} $;
+\ENDIF
+
+\textit{\textbf{Step 3:}} \textit{Checking condition of cluster}
+\STATE Calculating the similarity measure $\phi $ between input vector $Sig({I_i})$ and center ${C_j} = ({c_{j1}},...,{c_{jN}})$;
+\IF {$\phi (Sig({I_i}),{C_j}) \le {k_j}\theta $}
+\STATE Input vector $Sig({I_i})$ belongs to cluster ${V_J}$;
+\STATE Training ${W_J}$ as follows: 
+	\STATE $w_{i,J}^{(t + 1)} = {b_i} \vee w_{i,J}^{(t)}$;
+	\STATE $w_{i,j}^{(t + 1)} = \neg {b_i} \wedge w_{i,j}^{(t)}$, with $j \ne J$ and $j = 1,...,n$;
+\ELSE
+\STATE $S = S \cup \{ {W_J}\}$; go to \textit{Step 2};	
+\ENDIF
+
+\textbf{\textit{Step 4:}} \textit{Creating new cluster}
+\STATE Finding nearest cluster ${V_m}$ to ${V_J}$, i.e $(\phi ({C_J},{C_m}) - {k_m}\theta ) = \min \{ (\phi ({C_J},{C_i}) - {k_i}\theta ),i = 1,...,n{\rm{\} }}$;
+\STATE Setting ${k_0} = \left[ {{{(\phi ({I_0},{I_m}) - {k_m}\theta )} \mathord{\left/
+ {\vphantom {{(\phi ({I_0},{I_m}) - {k_m}\theta )} \theta }} \right.
+	\kern-\nulldelimiterspace} \theta }} \right] \ge 0$ ;
+\IF {${k_0} > 0$} 
+\STATE Create a cluster ${V_0} = \langle {C_0},{k_0}\theta \rangle$: ${C_0} = Sig({I_i})$;
+\STATE Create a connected vector ${W_0} = ({w_{1,0}},...,{w_{N0}})$, with ${w_{i,0}}$ random in $\{ 0,1\} $;
+\ENDIF
+\IF {${k_0} = 0$} 
+\STATE Input vector $Sig({I_i})$ belongs to cluster ${V_m}$; 
+\STATE Training ${W_m}$ as follows:
+	\STATE $w_{i,m}^{(t + 1)} = {b_i} \vee w_{i,m}^{(t)}$;
+	\STATE $w_{i,j}^{(t + 1)} = \neg {b_i} \wedge w_{i,j}^{(t)}$, with $j \ne m$ and $j = 1,...,n$;
+\ENDIF	
+\RETURN SOM Network;
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Image Retrieval Algorithm}
+The image retrieval algorithm finds out the set of similar images corresponding to the query image ${I_Q}$. On the base of Sig-SOM network structure after training, the algorithm determines the cluster ${V_J}$ which stores images with most similarity, after that it gives out the result including images of cluster ${V_J}$. However, the clusters link together in accordance with S-\textit{k}Graph, that the clusters near to cluster ${V_J}$ can find out the similar images. Therefore, in the similar image retrieval algorithm look for the images on contiguous clusters of the cluster ${V_J}$, i.e. look for images of clusters ${V_i}$ so that satisfy the condition of distance between two center cluster do not exceed $k\theta $ which given. After performing the similar image retrieval process, we select the images which have most similarity with image query ${I_Q}$. With each query image ${I_Q}$ and distance threshold $k\theta $, the similar image retrieval algorithm is done as follows: (\textbf{Algorithm~\ref{alg:image-retrieval}})
+\begin{algorithm}[!ht]
+\caption{Image Retrieval}
+\label{alg:image-retrieval}
+\begin{algorithmic}[1]
+\REQUIRE Query image ${I_Q}$ and Sig-SOM network
+
+\textit{\textbf{Step 1: }}\textit{Initializing }
+\STATE Initializing a set of image result $IMG = \emptyset $;
+\STATE Initializing a set of cluster $V = \emptyset $;
+
+\textit{\textbf{Step 2: }}\textit{Clustering}
+\STATE Calculating $\delta ({I_Q},{W_i})$, ${W_j} \in {\rm{W}}, j=1,...,n$
+\STATE Choosing winner cluster ${V_J}$, so that $\delta ({I_i},{W_J}) = \max \{ \delta ({I_i},{W_j})|j = 1,2,...,n\} $;
+\STATE $V = V \cup \{ {V_J}\}$;
+	
+\textit{\textbf{Step 3:}} \textit{Finding neighboring clusters}
+\FOR	{${V_i} \in {V_{SG}}$} 
+\IF {$\phi (I_m^0,I_i^0) \le k\theta $}
+\STATE $V = V \cup {V_i}$;
+\ENDIF
+\ENDFOR
+
+\textbf{\textit{Step 4:}} \textit{Retrieving similar images}
+\FOR {${V_j} \in V$}
+\STATE $IMG = IMG \cup \{ I_j^k \in {V_j},k = 1,...,|{V_j}|\} $;
+\ENDFOR
+\RETURN A set of similar images $IMG$;
+\end{algorithmic}
+\end{algorithm}
+
+%\section{Experiments}
+\subsection{The Image Retrieval System Model}
+On the base of structure of S-\textit{k}Graph and network training algorithm, as well as image retrieval algorithm, the content of the paper presents experiment application on the base of image databases including COREL, Wang and MSRDI. In this experiment builds meta-data for image database in the form of binary signatures, after that Sig-SOM network classifies and collects clusters on S-\textit{k}Graph. In the paper, we query similar images and give out the result including a set of images is arranged according to the similarity measure. The experiment process of similar image retrieval is shown in \textbf{Fig.~\ref{fig:Model}} and done as follows: 
+\\\textit{\textbf{Phase 1:}} \textit{Creating meta-data}
+\\\textit{Step 1:} For any image in database of images, extract the interest regions.
+\\\textit{Step 2:} Based on the interest regions of image, create meta-data in the form of a binary signature.
+\\\textit{Step 3:} Based on \textit{\textbf{Algorithm~\ref{alg:SOM-training}}}, perform training and classify binary signatures and store it on the S-\textit{k}Graph.
+\\\textit{\textbf{Phase 2: }}\textit{Similar image retrieval}
+\\\textit{Step 1:} Each query image, perform converting into the binary signature based on the interest regions of image.
+\\\textit{Step 2:} Based on trained SOM network, perform the image retrieval process according to \textbf{\textit{Algorithm~\ref{alg:image-retrieval}}}.
+\\\textit{Step 3:} After having the result of similar images, arrange images into similar level and give out the result.
+%
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.5\textwidth]{Figure/Sig-SOM.eps}
+		\caption{A model of CBIR based on Sig-SOM and S-\textit{k}Graph}
+		\label{fig:Model}
+\end{figure}
+\subsection{The Experiment Results}
+The application is build based on IPT (\textit{Image Processing Toolbox}) of Matlab 2015. The experiment is executed on the computer which has the processor as Intel(R) CoreTM i7-2620M, CPU 2.70GHz, RAM 4GB and Windows 7 Professional operating system.
+
+The experimental processing is done on image databases including COREL, Wang, MSRDI. For any query image, we retrieve the most similar images on database. Then, we compare to the list of subjects of images to evaluate the accurate method. In the \textbf{Fig.~\ref{res-query}} shows the results of the proposed retrieval method.
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.224\textwidth]{figure/603result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/619result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/626result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/0007result.eps}
+		%\includegraphics[width=0.225\textwidth]{figure/0054result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/0059result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/0136result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/0156result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/0283result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/1045result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/107result.eps}
+		%\includegraphics[width=0.225\textwidth]{figure/1338result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/1786result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/178result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/202result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/278result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/3122result.eps}
+		\includegraphics[width=0.224\textwidth]{figure/430result.eps}
+		\caption{Some results of similar image retrieval}
+		\label{res-query}
+\end{figure}
+In order to performance evaluation in the proposed CBIR system, we calculate the values including \textit{precision}, \textit{recall}, \textit{F-measure} and the \textit{true positive rate} of ROC curve (\textit{Receiver Operating Characteristic}). According to \cite{Ahmad:15}, \textit{precision} is the ratio of the number of relevant images within the first k results to the number of total retrieved images. \textit{Recall} is the ratio of the number of relevant images within the first k results to the number of total relevant images. \textit{F-measure} is the harmonic mean of precision and recall. The formulas of these values are defined as follows:
+\begin{equation}
+\footnotesize precision = \frac{{(relevant~images \cap retrieved~images)}}{{retrieved~images}}
+\end{equation}
+\begin{equation}
+\footnotesize recall = \frac{{(relevant~images \cap retrieved~images)}}{{relevant~images}}
+\end{equation}
+\begin{equation}
+\footnotesize F - measure = 2 \times \frac{{(precision \times recall)}}{{(precision + recall)}}
+\end{equation}
+The COREL database has 1,000 images and is divided to 10 subjects. There are 100 images in each subject. The \textbf{Fig.~\ref{fig:CORELper}}  describes the \textit{precision-recall} curve and ROC curve. For the sake of clarity, we calculate the averages of performances and show in the \textbf{Fig.~\ref{fig:CORELaveper}}.
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.4\textwidth]{Figure/precision-recall_COREL.eps}
+		\caption{Performance of query process on COREL}
+		\label{fig:CORELper}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.4\textwidth]{Figure/average_precision-recall_COREL.eps}
+		\caption{The average performance of query process on COREL}
+		\label{fig:CORELaveper}
+\end{figure}
+
+In the similar method, the Wang database (10,800 images) is divided 80 subjects. In the each subject has from 100 images to 400 images. The MSRDI database (16,710 images) is divided 31 subjects where each subject has from 300 images to 500 images. The results of query process are described in the \textbf{Fig.~\ref{fig:CORELWangper}}, \textbf{Fig.~\ref{fig:CORELWangaveper}}, \textbf{Fig.~\ref{fig:MSRCper}}, \textbf{Fig.~\ref{fig:MSRCperave}}. These precision-recall curves and ROC curves show that the similar image method proposed very effective.
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.4\textwidth]{Figure/precision-recall_COREL_Wang.eps}
+		\caption{Performance of query process on Wang}
+		\label{fig:CORELWangper}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.4\textwidth]{Figure/average_precision-recall_COREL_Wang.eps}
+		\caption{The average performance of query process on Wang}
+		\label{fig:CORELWangaveper}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.4\textwidth]{Figure/precision-recall_MSRC.eps}
+		\caption{Performance of query process on MSRDI}
+		\label{fig:MSRCper}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.4\textwidth]{Figure/average_precision-recall_MSRC.eps}
+		\caption{The average performance of query process on MSRDI}
+		\label{fig:MSRCperave}
+\end{figure}
+
+Moreover, we compare the performance of proposed method with the state-of-the-art methods such as S-Tree, S-\textit{k}Graph, Interest points method, Color histogram, Fuzzy color histogram, Local feature regions \cite{Wang:10}, \cite{Wang:13}, \cite{Yannis:02}, \cite{Thanh:2013}, \cite{Thanh:2014}, \cite{Thanh:2014a}, \cite{Thanh:2014b}. The results of comparison are show from the \textbf{Table.~\ref{table1}} to \textbf{Table.~\ref{table7}}.
+
+\begin{table}[!b]
+ \centering
+ \caption{Average performance evaluation on COREL database}
+ \label{table1}
+ \begin{tabular}{|c|c|c|c|}
+   \hline
+   Performance & S-Tree & S-\textit{k}Graph & Our method\\\hline\hline
+   recall 		& 0.542 & 0.779 & 0.862 \\
+   precision 	& 0.549 & 0.748 & 0.884 \\
+   F-measure 	& 0.545 & 0.763 & 0.873 \\\hline
+ \end{tabular}
+\end{table}
+
+\begin{table}[!b]
+ \centering
+ \caption{Average performance evaluation on Wang database}
+ \label{table2}
+ \begin{tabular}{|c|c|c|c|}
+   \hline
+   Performance & S-Tree & S-\textit{k}Graph & Our method\\\hline\hline
+   recall 		& 0.542 & 0.742 & 0.806 \\
+   precision 	& 0.567 & 0.746 & 0.877 \\
+   F-measure 	& 0.565 & 0.744 & 0.839 \\\hline
+ \end{tabular}
+\end{table}
+
+\begin{table}[!b]
+ \centering
+ \caption{Average performance evaluation on MSRDI database}
+ \label{table3}
+ \begin{tabular}{|c|c|c|c|}
+   \hline
+   Performance & S-Tree & S-\textit{k}Graph & Our method\\\hline\hline
+   recall 		& 0.562 & 0.752 & 0.716 \\
+   precision 	& 0.568 & 0.758 & 0.797 \\
+   F-measure 	& 0.565 & 0.755 & 0.754 \\\hline
+ \end{tabular}
+\end{table}
+
+
+\begin{table}[!b]
+ \centering
+ \caption{Average performance evaluation on COREL}
+ \label{table4}
+ \begin{tabular}{|c|c|c|}
+   \hline
+   Performance & Interest points  & Our method\\\hline\hline
+   recall 		& 0.7045 & 0.862 \\
+   precision 	& 0.657 & 0.884 \\
+   F-measure 	& 0.680 & 0.873 \\\hline
+ \end{tabular}
+\end{table}
+
+\begin{table}[!b]
+ \centering
+ \caption{Average performance evaluation on COREL}
+ \label{table5}
+ \begin{tabular}{|c|c|c|}
+   \hline
+   Performance & Color histogram  & Our method\\\hline\hline
+   recall 		& 0.607 & 0.862 \\
+   precision 	& 0.488 & 0.884 \\
+   F-measure 	& 0.541 & 0.873 \\\hline
+ \end{tabular}
+\end{table}
+
+\begin{table}[!b]
+ \centering
+ \caption{Average performance evaluation on COREL}
+ \label{table6}
+ \begin{tabular}{|c|c|c|}
+   \hline
+   Performance & Fuzzy histogram  & Our method\\\hline\hline
+   recall 		& 0.612 & 0.862 \\
+   precision 	& 0.509 & 0.884 \\
+   F-measure 	& 0.556 & 0.873 \\\hline
+ \end{tabular}
+\end{table}
+
+\begin{table}[!b]
+ \centering
+ \caption{Average performance evaluation on COREL}
+ \label{table7}
+ \begin{tabular}{|c|c|c|}
+   \hline
+   Performance & Interest region  & Our method\\\hline\hline
+   recall 		& 0.782 & 0.862 \\
+   precision 	& 0.850 & 0.884 \\
+   F-measure 	& 0.814 & 0.873 \\\hline
+ \end{tabular}
+\end{table}
+
+In order to assess the query time of proposed method, we calculate the average query time of each subject in the images database (COREL, Wang, MSRDI). From that, we compare with the another co-methods such as linear methods, S-Tree, S-\textit{k}Graph \cite{Thanh:2013}, \cite{Thanh:2014}, \cite{Thanh:2014a}, \cite{Thanh:2014b}. The results are described in the \textbf{Fig.~\ref{fig:CORELtime}}, \textbf{Fig.~\ref{fig:Wangtime}}, \textbf{Fig.~\ref{fig:MSRCtime}} and the \textbf{Table.~\ref{table8}}.
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.45\textwidth]{Figure/query_time_COREL.eps}
+		\caption{Query time of retrieval process on COREL}
+		\label{fig:CORELtime}
+\end{figure}
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.45\textwidth]{Figure/query_time_COREL_Wang.eps}
+		\caption{Query time of retrieval process on Wang}
+		\label{fig:Wangtime}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+		\includegraphics[width=0.45\textwidth]{Figure/query_time_MSRC.eps}
+		\caption{Query time of retrieval process on MSRDI}
+		\label{fig:MSRCtime}
+\end{figure}
+
+\begin{table}[!b]
+ \centering
+ \caption{Average values of query time (s)}
+ \label{table8}
+ \begin{tabular}{|c|c|c|c|c|}
+   \hline
+   DB & linear & S-Tree & S-\textit{k}Graph  & Our method\\\hline\hline
+   COREL 		& 2.000 & 0.981 & 0.463 & 0.0789\\
+   Wang 	& 3.353 & 1.143 & 0.889 & 0.442\\
+   MSRDI 	& 6.113 & 2.655 & 2.320 & 1.128\\\hline
+ \end{tabular}
+\end{table}
+
+Furthermore, we compare the size of image databases with the size of binary signature database in the \textbf{Table.~\ref{table9}}. The results show that the query storage are reduced significantly.
+\begin{table}[!b]
+ \centering
+ \caption{The storage volumes}
+ \label{table9}
+ \begin{tabular}{|c|c|c|}
+   \hline
+   DB & image DB & binary signature \\\hline\hline
+   COREL 	& 59,691,434 bytes  & 5,715,22 bytes\\
+   Wang 	& 41,854,565 bytes  & 5,126,408 bytes\\
+   MSRDI 	& 360,202,240 bytes & 7,798,784 bytes\\\hline
+ \end{tabular}
+\end{table}
+
+\section{Conclusions}
+\label{Conclusions}
+In the paper, we built the CBIR (\textit{Content-Based Image Retrieval}) based on Sig-SOM network and signature graph structure. According to the experiment, the image retrieval problem rely on binary signature very effectively at the same time help to query quickly and significantly reduced the query storage. In order to improve the accuracy, we will extract a set of interest objects of image and describe them based on basis objects for creating binary signature in the future work. From that, we build a data structure to store and classify similar images, after that giving an automatic classification algorithm for a set of images.
+
+\bibliography{amcs}
+
+\begin{biography}[H1.eps]{Thanh The Van} was born in 1979. He received the B.S degree in Mathematics and Computer from the University of Science - HCMC National University, Vietnam, in 2001. In 2008, he obtained M.S degree in Computer Science from the Vietnam National University. Since the December 2012, he has been a PhD candidate in Hue University, Vietnam. His research interests include image processing and image retrieval.
+\end{biography}
+
+\begin{biography}[H2.eps]{Thanh Manh Le} was born in 1953. He received the Ph.D degree in Computer Science from Budapest University (ELTE), in 1994. He obtained Associate Professor from Hue University, Vietnam, in 2004. His research interests include Database, Knowledge base and Logic Programming.
+\end{biography}
+
+%\begin{appendix}{}
+% The proof of Theorem 1 xx xxx xxx xxx xx xx xxx xxx xxx xxx xxxxx xx xx xxxx xx xx xxx xx xxx xxx xxx xx xx  xxx xxx xxx xxx xxxxx xx xx xxxx xx xx xxx.
+%\begin{lemma}{}
+%\end{lemma}
+%\end{appendix}
+
+%\makeinfo
+
+\end{document}

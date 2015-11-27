@@ -1,0 +1,8 @@
+.\Figure
+*.eps
+*.pdf
+*.aux
+*.dvi
+*.bbl
+*.bib
+*.cls

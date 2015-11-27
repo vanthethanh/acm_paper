@@ -6,3 +6,8 @@
 *.bbl
 *.bib
 *.cls
+*.sty
+*.bst
+*.out
+*.log
+*.synctex.gz
